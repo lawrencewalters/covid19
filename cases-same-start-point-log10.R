@@ -1,5 +1,5 @@
 # compare slopes starting at min_start_value cases for all countries
-min_start_value <- 50
+min_start_value <- 100
 # Loading
 library(reshape2)
 library(ggplot2)
