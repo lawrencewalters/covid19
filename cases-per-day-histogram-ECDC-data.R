@@ -21,19 +21,14 @@ GET(url, authenticate(":", ":", type="ntlm"), write_disk(tf <- tempfile(fileext 
 ecdc <- read_excel(tf)
 
 # case increase per day graphs
-number_of_days <- 19
+number_of_days <- 20
 
 ecdc <- mutate(ecdc, date = as.Date(DateRep, '%Y-%m-%d'))
 
-x_end <- ecdc %>% 
-  group_by(date) %>% 
-  top_n(1, date) %>%
-  pull(date)
-
-ggplot(subset(ecdc, (date > Sys.Date() - number_of_days) & GeoId == 'DE'),
+ggplot(subset(ecdc, (date > Sys.Date() - number_of_days) & (GeoId %in% c('DE','IT','FR','ES','US'))),
        aes(x = date,
-           y = Cases,
-           fill = "Countries and territories")) +
+           y = Cases, # / (Pop_Data.2018 / 100000),
+           fill = `Countries and territories`)) +
   scale_x_date(date_labels = "%m.%d",
                breaks = "3 days",
                minor_breaks = "1 day",
@@ -45,9 +40,9 @@ ggplot(subset(ecdc, (date > Sys.Date() - number_of_days) & GeoId == 'DE'),
   theme(axis.text.x = element_text(angle = -90, vjust = 0.3),
         legend.position = "none") +
   geom_col(colour = "black") +
-  scale_y_continuous("New Cases per day") +
-  facet_wrap(~ GeoId,
+  scale_y_continuous("New Cases per day per 100k people") +
+  facet_wrap(~ `Countries and territories`,
              scales = "free_y") +
   scale_fill_brewer(palette = "Dark2") +
-  ggtitle(paste("New Cases per Day",Sys.Date()),
+  ggtitle(paste("New Cases per Day normalized by Population",Sys.Date()),
           subtitle = paste("Note different scales! In the last", number_of_days, "days"))
