@@ -1,5 +1,5 @@
 # compare slopes starting at same cases for all countries
-min_start_value <- 100
+min_start_value <- 1000
 countries <- c('DE','US', 'IT', 'ES','FR','UK','KR')
 
 #install.packages("readxl")
@@ -71,8 +71,6 @@ ggplot(subset(ecdc,casesIndexDate >= 0),
            color=geoId)) +
   #theme(axis.text.x = element_text(angle = -90, hjust = 1))+
   geom_line(size = 0.1)+
-  geom_abline(intercept = 2, slope = 0.1, linetype="dashed", color="gray") +
-  geom_abline(intercept = 2, slope = 0.15, linetype="dashed", color="gray") +
   #geom_point(aes(shape = geoId))+
   geom_text(data=labels, 
             aes(label = geoId, 
@@ -84,7 +82,6 @@ ggplot(subset(ecdc,casesIndexDate >= 0),
   ggtitle("Total cases over time",
           subtitle = paste("Synchronized with day '0' as when the country had",min_start_value, "cases. Data from ECDC data set",latest_data_date,"retrieved",retrieved_date)) +
   scale_y_continuous("Total cases",
-                     trans="log10",
                      sec.axis = sec_axis(~ ., breaks = y_ends),
                      expand = expansion(mult = c(0, 0.1))
                      )+

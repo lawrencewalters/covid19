@@ -69,7 +69,7 @@ ggplot(dflong,
           subtitle = paste("Synchronized with day '0' as when the country had",min_start_value, "deaths")) +
   scale_y_continuous("Total deaths (log scale)", 
                      trans="log10",
-                     sec.axis = sec_axis(~ ., breaks = y_ends))+
+                     sec.axis = sec_axis(~ ., breaks = y_ends))
   expand_limits(x=0, y=50)
   #geom_smooth(method='lm',se=FALSE)
 
