@@ -70,8 +70,8 @@ ggplot(subset(ecdc,deathsIndexDate >= 0),
            fill=geoId,
            color=geoId)) +
   #theme(axis.text.x = element_text(angle = -90, hjust = 1))+
-  geom_abline(intercept = 2, slope = 0.1, linetype="dashed", color="gray") +
-  geom_abline(intercept = 2, slope = 0.15, linetype="dashed", color="gray") +
+  geom_abline(intercept = log10(min_start_value), slope = 0.1, linetype="dashed", color="gray") +
+  geom_abline(intercept = log10(min_start_value), slope = 0.15, linetype="dashed", color="gray") +
   geom_line(size = 0.1)+
   geom_text(data=labels, 
             aes(label = geoId, 
