@@ -1,4 +1,5 @@
-# Cases per day histogram ECDC data
+# cases per day histogram ECDC data
+number_of_days <- 30
 
 #install.packages("readxl")
 #install.packages("httr")
@@ -9,26 +10,29 @@ library(reshape2)
 library(ggplot2)
 library(dplyr)
 
-#create the URL where the dataset is stored with automatic updates every day
-
-url <- paste("https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-",format(Sys.time(), "%Y-%m-%d"), ".xlsx", sep = "")
-
-#download the dataset from the website to a local temporary file
-
-GET(url, authenticate(":", ":", type="ntlm"), write_disk(tf <- tempfile(fileext = ".xlsx")))
+# get the most recent data.... note that URL includes date
+retrieved_date <- Sys.time()
+latest_data_date <- Sys.Date() + 1
+resp <- list()
+resp[["status_code"]] <- 404
+while(resp[["status_code"]] == 404)
+{
+  latest_data_date <- latest_data_date - 1
+  url <- paste("https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-",format(latest_data_date, "%Y-%m-%d"), ".xlsx", sep = "")
+  resp <- GET(url, authenticate(":", ":", type="ntlm"), write_disk(tf <- tempfile(fileext = ".xlsx")))
+  retrieved_date <- resp[["date"]]
+}
 
 #read the Dataset sheet into “R”
 ecdc <- read_excel(tf)
 
 # case increase per day graphs
-number_of_days <- 20
+ecdc <- mutate(ecdc, date = as.Date(dateRep, '%Y-%m-%d'))
 
-ecdc <- mutate(ecdc, date = as.Date(DateRep, '%Y-%m-%d'))
-
-ggplot(subset(ecdc, (date > Sys.Date() - number_of_days) & (GeoId %in% c('DE','IT','FR','ES','US'))),
+ggplot(subset(ecdc, (date > Sys.Date() - number_of_days) & (geoId %in% c('DE','IT','FR','ES','US'))),
        aes(x = date,
-           y = Cases, # / (Pop_Data.2018 / 100000),
-           fill = `Countries and territories`)) +
+           y = cases, # / (Pop_Data.2018 / 100000),
+           fill = countriesAndTerritories)) +
   scale_x_date(date_labels = "%m.%d",
                breaks = "3 days",
                minor_breaks = "1 day",
@@ -40,9 +44,9 @@ ggplot(subset(ecdc, (date > Sys.Date() - number_of_days) & (GeoId %in% c('DE','I
   theme(axis.text.x = element_text(angle = -90, vjust = 0.3),
         legend.position = "none") +
   geom_col(colour = "black") +
-  scale_y_continuous("New Cases per day per 100k people") +
-  facet_wrap(~ `Countries and territories`,
+  scale_y_continuous("New cases per day") +
+  facet_wrap(~ countriesAndTerritories,
              scales = "free_y") +
   scale_fill_brewer(palette = "Dark2") +
-  ggtitle(paste("New Cases per Day normalized by Population",Sys.Date()),
-          subtitle = paste("Note different scales! In the last", number_of_days, "days"))
+  ggtitle(paste("New cases per Day",Sys.Date()),
+          subtitle = paste("In the last", number_of_days, "days. Data from ECDC data set",latest_data_date,"retrieved",retrieved_date))

@@ -1,5 +1,5 @@
 # case increase per day graphs
-number_of_days <- 19
+number_of_days <- 20
 
 # Loading
 library(reshape2)
@@ -58,4 +58,4 @@ ggplot(subset(dflong, date > Sys.Date() - number_of_days),
              labeller = variable_labeller) +
   scale_fill_brewer(palette = "Dark2") +
   ggtitle(paste("New Cases per Day",Sys.Date()),
-          subtitle = paste("Note different scales! In the last", number_of_days, "days"))
+          subtitle = paste("In the last", number_of_days, "days. Source is generally zeit.de for berlin/germany, mixed otherwise"))
