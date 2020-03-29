@@ -36,15 +36,16 @@ ecdc <- ecdc %>%
   mutate(deathsTot = cumsum(deaths))
 
 # find the day that had > min_start_value deaths per country
-start_dates <- filter(ecdc, deathsTot > min_start_value) %>%
+starts <- filter(ecdc, deathsTot > min_start_value) %>%
   group_by(geoId) %>%
-  summarise(start_date = min(date))
+  summarise(startDate = min(date),deathsAdj = min(deathsTot) - min_start_value)
 
 # get that into an "index" field that can be used for graphing
-ecdc <- filter(ecdc, geoId %in% start_dates$geoId) %>%
-  inner_join(start_dates,by = c('geoId','geoId')) %>%
+ecdc <- filter(ecdc, geoId %in% starts$geoId) %>%
+  inner_join(starts,by = c('geoId','geoId')) %>%
   group_by(geoId) %>%
-  mutate(deathsIndexDate = as.integer(date - start_date))
+  mutate(deathsIndexDate = as.integer(date - startDate), 
+         adjDeathsTot = deathsTot - deathsAdj)
 
 # data check
 head(filter(ecdc, geoId == 'DE')[1,10:13])
@@ -66,7 +67,7 @@ labels <- ecdc %>%
 
 ggplot(subset(ecdc,deathsIndexDate >= 0), 
        aes(x=deathsIndexDate,
-           y=deathsTot,
+           y=adjDeathsTot,
            fill=geoId,
            color=geoId)) +
   #theme(axis.text.x = element_text(angle = -90, hjust = 1))+
