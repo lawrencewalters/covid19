@@ -1,5 +1,6 @@
 # cases per day histogram ECDC data
-number_of_days <- 30
+number_of_days <- 21
+countries <- c('DE','US', 'IT', 'ES','FR')
 
 #install.packages("readxl")
 #install.packages("httr")
@@ -25,21 +26,25 @@ while(resp[["status_code"]] == 404)
 
 #read the Dataset sheet into “R”
 ecdc <- read_excel(tf)
+ecdc <- filter(ecdc, geoId %in% countries)
 
 # case increase per day graphs
-ecdc <- mutate(ecdc, date = as.Date(dateRep, '%Y-%m-%d'))
+ecdc <- mutate(ecdc, date = as.Date(dateRep, '%Y-%m-%d'),
+               wday = as.POSIXlt(date)$wday,
+               wkday = ifelse(wday == 0 | wday == 6,0.9,1))
+
+yrng <- range(ecdc$cases)
 
 ggplot(subset(ecdc, (date > Sys.Date() - number_of_days) & (geoId %in% c('DE','IT','FR','ES','US'))),
        aes(x = date,
-           y = cases, # / (Pop_Data.2018 / 100000),
-           fill = countriesAndTerritories)) +
+           y = cases,
+           fill = countriesAndTerritories, 
+           alpha=wkday
+           )) +
   scale_x_date(date_labels = "%m.%d",
                breaks = "3 days",
                minor_breaks = "1 day",
-               name = "Date",
-               #labels = weekend_labeller
-               #limits = c(Sys.Date() - number_of_days,Sys.Date()),
-               #expand=c(0,0)
+               name = "Date. Weekends shaded lighter"
   ) +
   theme(axis.text.x = element_text(angle = -90, vjust = 0.3),
         legend.position = "none") +
@@ -48,5 +53,6 @@ ggplot(subset(ecdc, (date > Sys.Date() - number_of_days) & (geoId %in% c('DE','I
   facet_wrap(~ countriesAndTerritories,
              scales = "free_y") +
   scale_fill_brewer(palette = "Dark2") +
+  scale_alpha(range = c(0.4, 1)) +
   ggtitle(paste("New cases per Day",Sys.Date()),
           subtitle = paste("In the last", number_of_days, "days. Data from ECDC data set",latest_data_date,"retrieved",retrieved_date))
