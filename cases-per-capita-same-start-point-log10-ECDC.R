@@ -1,7 +1,8 @@
-# compare slopes starting at same cases for all countries
-min_start_value <- 100
+# total cases per capita starting at same cases for all countries
+min_start_value <- 5.0
 countries <- c('DE','US', 'IT', 'ES','FR','UK','KR')
-
+capita <- 100000
+capita_word <- format(capita, scientific=FALSE,big.mark=",")
 #install.packages("readxl")
 #install.packages("httr")
 
@@ -36,7 +37,7 @@ ecdc <- ecdc %>%
   mutate(casesTot = cumsum(cases))
 
 # find the day that had > min_start_value cases per country
-start_dates <- filter(ecdc, casesTot > min_start_value) %>%
+start_dates <- filter(ecdc, casesTot / (popData2018 / capita) > min_start_value) %>%
   group_by(geoId) %>%
   summarise(start_date = min(date))
 
@@ -55,8 +56,9 @@ for(country in countries) {
 
 y_ends <- ecdc %>% 
   group_by(geoId) %>% 
-  top_n(1, casesTot) %>% 
-  pull(casesTot)
+  top_n(1, casesTot) %>%
+  mutate(casesPerCap = casesTot / (popData2018 / capita)) %>%
+  pull(casesPerCap)
 
 labels <- ecdc %>%
   group_by(geoId) %>%
@@ -64,11 +66,12 @@ labels <- ecdc %>%
 
 ggplot(subset(ecdc,casesIndexDate >= 0), 
        aes(x=casesIndexDate,
-           y=casesTot,
+           y=casesTot/(popData2018 / capita),
            fill=geoId,
            color=geoId)) +
   #theme(axis.text.x = element_text(angle = -90, hjust = 1))+
   geom_line(size = 0.1)+
+  geom_abline(intercept = log10(min_start_value), slope = 0.08, linetype="dashed", color="gray") +
   geom_abline(intercept = log10(min_start_value), slope = 0.1, linetype="dashed", color="gray") +
   geom_abline(intercept = log10(min_start_value), slope = 0.15, linetype="dashed", color="gray") +
   #geom_point(aes(shape = geoId))+
@@ -76,16 +79,16 @@ ggplot(subset(ecdc,casesIndexDate >= 0),
             aes(label = geoId, 
                 colour = geoId, 
                 x = casesIndexDate, 
-                y = casesTot), 
+                y = casesTot/(popData2018 / capita)),
             hjust = -0.5, 
             vjust = 0.5) +
-  ggtitle("Total cases over time",
+  ggtitle(paste("Total cases per",capita_word,"people over time"),
           subtitle = paste("Synchronized with day '0' as when the country had",min_start_value, "cases. Data from ECDC data set",latest_data_date,"retrieved",retrieved_date)) +
-  scale_y_continuous("Total cases",
+  scale_y_continuous(paste("Total cases per", capita_word, "people"),
                      trans="log10",
                      sec.axis = sec_axis(~ ., breaks = y_ends),
                      expand = expansion(mult = c(0, 0.1))
                      )+
-  scale_x_continuous(paste("Days since",min_start_value,"cases"),
+  scale_x_continuous(paste("Days since",min_start_value,"cases per",capita_word),
                      expand = expansion(mult = c(0, .1)))
-    
+  

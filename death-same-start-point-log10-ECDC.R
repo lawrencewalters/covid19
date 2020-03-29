@@ -82,7 +82,7 @@ ggplot(subset(ecdc,deathsIndexDate >= 0),
             vjust = 0.5) +
   ggtitle("Total deaths over time",
           subtitle = paste("Synchronized with day '0' as when the country had",min_start_value, "deaths. Data from ECDC data set",latest_data_date,"retrieved",retrieved_date)) +
-  scale_y_continuous("Total deaths (log scale)", 
+  scale_y_continuous("Total deaths", 
                      trans="log10",
                      sec.axis = sec_axis(~ ., breaks = y_ends),
                      expand = expansion(mult = c(0, .1))) +
