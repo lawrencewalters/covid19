@@ -1,6 +1,6 @@
 # compare slopes starting at same cases for all countries
 min_start_value <- 100
-countries <- c('DE','US', 'IT', 'ES','FR','UK','KR')
+countries <- c('DE','US', 'IT', 'ES','FR','UK','KR','AT')
 
 #install.packages("readxl")
 #install.packages("httr")
@@ -67,11 +67,9 @@ ggplot(subset(ecdc,casesIndexDate >= 0),
            y=casesTot,
            fill=geoId,
            color=geoId)) +
-  #theme(axis.text.x = element_text(angle = -90, hjust = 1))+
   geom_line(size = 0.1)+
   geom_abline(intercept = log10(min_start_value), slope = 0.1, linetype="dashed", color="gray") +
   geom_abline(intercept = log10(min_start_value), slope = 0.15, linetype="dashed", color="gray") +
-  #geom_point(aes(shape = geoId))+
   geom_text(data=labels, 
             aes(label = geoId, 
                 colour = geoId, 
