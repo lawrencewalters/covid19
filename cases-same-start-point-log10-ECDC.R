@@ -1,6 +1,6 @@
 # compare slopes starting at same cases for all countries
 min_start_value <- 100
-countries <- c('DE','US', 'IT', 'ES','FR','UK','KR','AT')
+countries <- c('DE','US', 'IT', 'ES','FR','UK','KR','AT','CA')
 
 #install.packages("readxl")
 #install.packages("httr")

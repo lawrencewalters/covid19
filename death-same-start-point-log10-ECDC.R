@@ -1,6 +1,6 @@
 # compare slopes starting at same deaths for all countries
-min_start_value <- 50
-countries <- c('DE','US', 'IT', 'ES','FR','AT')
+min_start_value <- 10
+countries <- c('DE','US', 'IT', 'ES','FR','AT','UK','CA')
 
 #install.packages("readxl")
 #install.packages("httr")

@@ -1,6 +1,6 @@
 # deaths per day histogram ECDC data
 number_of_days <- 21
-countries <- c('DE','US', 'IT', 'ES','FR','UK','AT')
+countries <- c('DE','US', 'IT', 'ES','FR','UK','AT','CA')
 
 #install.packages("readxl")
 #install.packages("httr")
