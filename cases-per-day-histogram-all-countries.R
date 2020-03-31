@@ -1,22 +1,28 @@
 # case increase per day graphs
 number_of_days <- 20
+regression_days <- 7
 
 # Loading
 library(reshape2)
 library(ggplot2)
 library(dplyr)
+library(broom)
 
 df<-read.csv("data\\daily.csv", header = TRUE)
 df <- mutate(df, berlin_increase = berlin_cases - lag(berlin_cases))
 df <- mutate(df, germany_increase = germany_cases - lag(germany_cases))
 df <- mutate(df, italy_increase = italy_cases - lag(italy_cases))
-df <- mutate(df, date = as.Date(date, '%Y-%m-%d'))
+# get date as actual date object, and weekend calcs
+df <- mutate(df, 
+             date = as.Date(date, '%Y-%m-%d'), 
+             wday = as.POSIXlt(date)$wday, 
+             wkday = ifelse(wday == 0 | wday == 6,0.9,1))
 
-
-dflong <- melt(df, id.vars = "date",
+dflong <- melt(df, id.vars = c("date","wday","wkday"),
                    measure.vars = c("berlin_increase", 
                                     "germany_increase",
                                     "italy_increase"))
+
 variable_names <- list(
   "berlin_increase" = "Berlin" ,
   "germany_increase" = "Germany",
@@ -27,35 +33,55 @@ variable_labeller <- function(variable,value){
   return(variable_names[value])
 }
 
-weekend_labeller <- function(variable, value) {
-  return("hello")
-}
+latest_data_date <- max(dflong$date)
+regressions <- dflong %>%
+  filter(date > latest_data_date - regression_days) %>%
+  group_by(variable) %>%
+  do(model = lm(value ~ date, data = .)) %>%
+  tidy(model)
 
-x_end <- dflong %>% 
-  group_by(date) %>% 
-  top_n(1, date) %>%
-  pull(date)
+labels <- dflong %>%
+  group_by(variable) %>%
+  top_n(1,value)
 
+labels <- regressions %>%
+  filter(term == 'date') %>%
+  inner_join(labels)
+labels <- mutate(labels,
+                 labelText = paste('p =',
+                                   format(`p.value`, 
+                                          digits=2, 
+                                          nsmall = 1)))
 
 ggplot(subset(dflong, date > Sys.Date() - number_of_days),
        aes(x = date,
            y = value,
-           fill = variable)) +
+           fill = variable,
+           alpha = wkday)) +
+  geom_col(colour = "black") +
+  geom_smooth(method='lm',formula=y ~ x,
+              data = subset(dflong, 
+                            (date > latest_data_date - regression_days))) +
+  geom_text(data=labels, 
+            aes(label = labelText, 
+                x = latest_data_date - regression_days, 
+                y = labels$value,
+                alpha = 1), 
+            hjust = -0.0, 
+            vjust = 0.0) +
   scale_x_date(date_labels = "%m.%d",
                breaks = "3 days",
                minor_breaks = "1 day",
-               name = "Date",
-               #labels = weekend_labeller
-               #limits = c(Sys.Date() - number_of_days,Sys.Date()),
-               #expand=c(0,0)
+               name = "Date"
                ) +
+  scale_alpha(range = c(0.4, 1)) +
   theme(axis.text.x = element_text(angle = -90, vjust = 0.3),
         legend.position = "none") +
-  geom_col(colour = "black") +
   scale_y_continuous("New Cases per day") +
   facet_wrap(~ variable,
              scales = "free_y",
              labeller = variable_labeller) +
   scale_fill_brewer(palette = "Dark2") +
-  ggtitle(paste("New Cases per Day",Sys.Date()),
-          subtitle = paste("In the last", number_of_days, "days. Source is generally zeit.de for berlin/germany, mixed otherwise"))
+  labs(title = "Berlin, Germany, Italy new cases per Day",
+       subtitle = paste("Data as of",latest_data_date,".p values for last",regression_days,"day linear regression"),
+       caption = "Sources: berlin.de (Berlin), zeit.de (Germany, Italy)")
