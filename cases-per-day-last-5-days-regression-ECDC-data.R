@@ -1,7 +1,7 @@
 # cases per day histogram ECDC data
 number_of_days <- 21
 regression_days <- 7
-countries <- c('DE','US', 'IT', 'ES','FR','UK','AT')
+countries <- c('DE','US', 'IT', 'ES','FR','UK','AT','CA')
 #countries <- c('AT','IT')
 Sys.setenv(TZ="Europe/Berlin")
 
