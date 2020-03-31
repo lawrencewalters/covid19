@@ -1,6 +1,6 @@
 # deaths per day histogram ECDC data
 number_of_days <- 21
-countries <- c('DE','US', 'IT', 'ES','FR')
+countries <- c('DE','US', 'IT', 'ES','FR','UK','AT')
 
 #install.packages("readxl")
 #install.packages("httr")
@@ -35,7 +35,7 @@ ecdc <- mutate(ecdc, date = as.Date(dateRep, '%Y-%m-%d'),
 
 yrng <- range(ecdc$deaths)
 
-ggplot(subset(ecdc, (date > Sys.Date() - number_of_days) & (geoId %in% c('DE','IT','FR','ES','US'))),
+ggplot(subset(ecdc, (date > Sys.Date() - number_of_days) & (geoId %in% countries)),
        aes(x = date,
            y = deaths,
            fill = countriesAndTerritories, 
@@ -56,3 +56,4 @@ ggplot(subset(ecdc, (date > Sys.Date() - number_of_days) & (geoId %in% c('DE','I
   scale_alpha(range = c(0.4, 1)) +
   ggtitle(paste("New deaths per Day",Sys.Date()),
           subtitle = paste("In the last", number_of_days, "days. Data from ECDC data set",latest_data_date,"retrieved",retrieved_date))
+
