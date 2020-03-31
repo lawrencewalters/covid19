@@ -28,7 +28,7 @@ while(resp[["status_code"]] == 404)
 ecdc <- read_excel(tf)
 ecdc <- filter(ecdc, geoId %in% countries)
 
-# death increase per day graphs
+# get date as actual date object, and weekend calcs
 ecdc <- mutate(ecdc, date = as.Date(dateRep, '%Y-%m-%d'),
                wday = as.POSIXlt(date)$wday,
                wkday = ifelse(wday == 0 | wday == 6,0.9,1))
