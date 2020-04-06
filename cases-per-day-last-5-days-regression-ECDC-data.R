@@ -48,8 +48,6 @@ df <- mutate(df,
              countryterritoryCode = "BER",
              popData2018 = 3769495)
 df <- subset(df, select = c(dateRep, day, month, year, cases, deaths, countriesAndTerritories, geoId, countryterritoryCode, popData2018))
-names(df)
-names(ecdc)
 
 ecdc <- rbind(df, ecdc)
 
