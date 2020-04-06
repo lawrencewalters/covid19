@@ -1,6 +1,6 @@
 # cases per day histogram ECDC data
-number_of_days <- 21
-regression_days <- 7
+number_of_days <- 40
+regression_days <- 10
 countries <- c('DE','US', 'IT', 'ES','FR','UK','AT','CA')
 #countries <- c('AT','IT')
 Sys.setenv(TZ="Europe/Berlin")
@@ -14,6 +14,8 @@ library(reshape2)
 library(ggplot2)
 library(dplyr)
 library(broom)
+library(scales)
+library(ggpmisc)
 
 # get the most recent data.... note that URL includes date
 retrieved_date <- Sys.time()
@@ -48,13 +50,15 @@ regressions <- ecdc %>%
   do(model = lm(cases ~ date, data = .)) %>%
   tidy(model)
 
-labels <- ecdc[,c('geoId','countriesAndTerritories','date','cases')] %>%
+labels <- ecdc[,c('geoId','countriesAndTerritories','cases')] %>%
   group_by(geoId) %>%
   top_n(1,cases)
 
+# get just one row from regressions (date is arbitrary)
 labels <- regressions %>%
-  filter(term == 'date') %>%
+  filter(term=="date") %>%
   inner_join(labels)
+
 labels <- mutate(labels,
                  labelText = paste('p =',
                                    format(`p.value`, 
@@ -80,22 +84,14 @@ ggplot(subset(ecdc,
   geom_smooth(method='lm',formula=y ~ x,
               data = subset(ecdc, 
                             (date > latest_data_date - regression_days))) +
-  geom_text(data=labels, 
-            aes(label = labelText, 
-                x = latest_data_date - regression_days, 
-                y = labels$cases,
-                alpha = 1), 
-            hjust = -0.0, 
-            vjust = 0.0) +
-  scale_y_continuous("New cases per day") +
+  geom_text_npc(data=labels,aes(npcx = 1, npcy = 1, label = labelText))+
+  scale_y_continuous("New cases per day", label = comma) +
   facet_wrap(~ countriesAndTerritories,
              scales = "free_y") +
   scale_fill_brewer(palette = "Dark2") +
   scale_alpha(range = c(0.4, 1)) +
-  ggtitle(paste("New cases per Day",latest_data_date),
-          subtitle = paste("In the last", 
-                           number_of_days, 
-                           "days. Regression analysis on most recent 7 days, with p value. Data from ECDC data set",
+  ggtitle(paste("New cases per day for last", number_of_days,"days as of",format.Date(latest_data_date, "%D")),
+          subtitle = paste("p value from linear regression on most recent",regression_days,"days. ECDC data",
                            latest_data_date,
                            "retrieved",
                            format.Date(retrieved_date, "%D %H:%M:%S %Z")))

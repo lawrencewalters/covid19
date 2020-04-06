@@ -1,6 +1,6 @@
 # case increase per day graphs
-number_of_days <- 20
-regression_days <- 7
+number_of_days <- 28
+regression_days <- 14
 
 # Loading
 library(reshape2)
@@ -19,9 +19,11 @@ df <- mutate(df,
              wkday = ifelse(wday == 0 | wday == 6,0.9,1))
 
 dflong <- melt(df, id.vars = c("date","wday","wkday"),
-                   measure.vars = c("berlin_increase", 
-                                    "germany_increase",
-                                    "italy_increase"))
+                   measure.vars = c("berlin_increase"
+                                    #, 
+#                                    "germany_increase",
+#                                    "italy_increase"
+))
 
 variable_names <- list(
   "berlin_increase" = "Berlin" ,

@@ -10,6 +10,7 @@ library(httr)
 library(reshape2)
 library(ggplot2)
 library(dplyr)
+library(scales)
 
 # get the most recent data.... note that URL includes date
 retrieved_date <- Sys.time()
@@ -46,13 +47,6 @@ ecdc <- filter(ecdc, geoId %in% start_dates$geoId) %>%
   group_by(geoId) %>%
   mutate(casesIndexDate = as.integer(date - start_date))
 
-# data check
-head(filter(ecdc, geoId == 'DE')[1,10:13])
-
-for(country in countries) {
-  # do something
-}
-
 y_ends <- ecdc %>% 
   group_by(geoId) %>% 
   top_n(1, casesTot) %>% 
@@ -78,12 +72,16 @@ ggplot(subset(ecdc,casesIndexDate >= 0),
             hjust = -0.5, 
             vjust = 0.5) +
   ggtitle("Total cases over time",
-          subtitle = paste("Synchronized with day '0' as when the country had",min_start_value, "cases. Data from ECDC data set",latest_data_date,"retrieved",retrieved_date)) +
+          subtitle = paste("Synchronized with day '0' as when the country had",min_start_value, "cases.")) +
+  labs(caption=paste("Data from ECDC data set",latest_data_date,"retrieved",retrieved_date)) +
+  theme(legend.position = "none") +
   scale_y_continuous("Total cases",
                      trans="log10",
-                     sec.axis = sec_axis(~ ., breaks = y_ends),
+                     label=comma,
+                     sec.axis = sec_axis(~ .,
+                                         breaks = y_ends,
+                                         label = comma),
                      expand = expansion(mult = c(0, 0.1))
                      )+
   scale_x_continuous(paste("Days since",min_start_value,"cases"),
-                     expand = expansion(mult = c(0, .1)))
-    
+                     expand = expansion(mult = c(0, .1))) 

@@ -54,6 +54,6 @@ ggplot(subset(ecdc, (date > Sys.Date() - number_of_days) & (geoId %in% countries
              scales = "free_y") +
   scale_fill_brewer(palette = "Dark2") +
   scale_alpha(range = c(0.4, 1)) +
-  ggtitle(paste("New deaths per Day",Sys.Date()),
-          subtitle = paste("In the last", number_of_days, "days. Data from ECDC data set",latest_data_date,"retrieved",retrieved_date))
+  ggtitle(paste("New deaths per Day",latest_data_date),
+          subtitle = paste("In the last", number_of_days, "days. ECDC data ",latest_data_date,"retrieved",retrieved_date))
 

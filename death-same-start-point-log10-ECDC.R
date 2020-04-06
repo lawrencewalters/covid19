@@ -1,5 +1,5 @@
 # compare slopes starting at same deaths for all countries
-min_start_value <- 10
+min_start_value <- 25
 countries <- c('DE','US', 'IT', 'ES','FR','AT','UK','CA')
 
 #install.packages("readxl")
@@ -10,6 +10,7 @@ library(httr)
 library(reshape2)
 library(ggplot2)
 library(dplyr)
+library(scales)
 
 # get the most recent data.... note that URL includes date
 retrieved_date <- Sys.time()
@@ -47,20 +48,11 @@ ecdc <- filter(ecdc, geoId %in% starts$geoId) %>%
   mutate(deathsIndexDate = as.integer(date - startDate), 
          adjDeathsTot = deathsTot - deathsAdj)
 
-# data check
-head(filter(ecdc, geoId == 'DE')[1,10:13])
-
-for(country in countries) {
-  # do something
-}
-
 y_ends <- ecdc %>% 
   group_by(geoId) %>% 
   top_n(1, deathsTot) %>% 
   pull(deathsTot)
 
-#x_labels <-
-  
 labels <- ecdc %>%
   group_by(geoId) %>%
   top_n(1, deathsIndexDate)
@@ -70,7 +62,6 @@ ggplot(subset(ecdc,deathsIndexDate >= 0),
            y=adjDeathsTot,
            fill=geoId,
            color=geoId)) +
-  #theme(axis.text.x = element_text(angle = -90, hjust = 1))+
   geom_abline(intercept = log10(min_start_value), slope = 0.1, linetype="dashed", color="gray") +
   geom_abline(intercept = log10(min_start_value), slope = 0.15, linetype="dashed", color="gray") +
   geom_line(size = 0.1)+
@@ -82,11 +73,15 @@ ggplot(subset(ecdc,deathsIndexDate >= 0),
             hjust = -0.5, 
             vjust = 0.5) +
   ggtitle("Total deaths over time",
-          subtitle = paste("Synchronized with day '0' as when the country had",min_start_value, "deaths. Data from ECDC data set",latest_data_date,"retrieved",retrieved_date)) +
+          subtitle = paste("Starting at",min_start_value, "deaths. ECDC data ",latest_data_date,"retrieved",retrieved_date)) +
+  theme(legend.position = 'none') +
   scale_y_continuous("Total deaths", 
                      trans="log10",
-                     sec.axis = sec_axis(~ ., breaks = y_ends),
-                     expand = expansion(mult = c(0, .1))) +
+                     sec.axis = sec_axis(~ ., 
+                                         breaks = y_ends,
+                                         label = comma),
+                     expand = expansion(mult = c(0, .1)),
+                     label = comma) +
   scale_x_continuous(paste("Days since",min_start_value,"deaths"),
                      expand = expansion(mult = c(0, .1)))
 
