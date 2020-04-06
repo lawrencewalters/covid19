@@ -1,8 +1,7 @@
 # cases per day histogram ECDC data
 number_of_days <- 40
 regression_days <- 10
-countries <- c('DE','US', 'IT', 'ES','FR','UK','AT','CA')
-#countries <- c('AT','IT')
+countries <- c('DE','US', 'IT', 'ES','FR','UK','AT','CA','BER')
 Sys.setenv(TZ="Europe/Berlin")
 
 #install.packages("readxl")
@@ -33,6 +32,26 @@ while(resp[["status_code"]] == 404)
 #read the Dataset sheet into “R”
 ecdc <- read_excel(tf)
 ecdc <- filter(ecdc, geoId %in% countries)
+
+# get my hand managed data
+df<-read.csv("data\\daily.csv", header = TRUE)
+df <- mutate(df, cases = berlin_cases - lag(berlin_cases))
+df <- mutate(df, deaths = berlin_deaths - lag(berlin_deaths))
+# get date as actual date object, and weekend calcs
+df <- mutate(df, 
+             dateRep = as.Date(date, '%Y-%m-%d'), 
+             day = as.double(format.Date(dateRep, "%e")),
+             month = as.double(format.Date(dateRep, "%m")),
+             year = as.double(format.Date(dateRep, "%Y")),
+             countriesAndTerritories = 'Berlin',
+             geoId = "BER",
+             countryterritoryCode = "BER",
+             popData2018 = 3769495)
+df <- subset(df, select = c(dateRep, day, month, year, cases, deaths, countriesAndTerritories, geoId, countryterritoryCode, popData2018))
+names(df)
+names(ecdc)
+
+ecdc <- rbind(df, ecdc)
 
 # case increase per day graphs
 ecdc <- mutate(ecdc, 
