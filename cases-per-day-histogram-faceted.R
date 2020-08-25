@@ -1,5 +1,5 @@
 # cases per day histogram ECDC data
-number_of_days <- 40
+number_of_days <- 90
 regression_days <- 10
 countries <- c('DE','US', 'IT', 'ES','FR','UK','AT','CA','BER')
 Sys.setenv(TZ="Europe/Berlin")
@@ -78,8 +78,9 @@ ggplot(subset(ecdc,
                             (date > latest_data_date - regression_days))) +
   geom_text_npc(data=labels,aes(npcx = 1, npcy = 1, label = labelText))+
   scale_y_continuous("New cases per day", label = comma) +
-  facet_wrap(~ countriesAndTerritories,
-             scales = "free_y") +
+  facet_wrap(~ geoId,
+             scales = "free_y",
+             labeller = LabellerForGeoIDs()) +
   scale_fill_brewer(palette = "Dark2") +
   scale_alpha(range = c(0.4, 1)) +
   ggtitle(paste("New cases per day for last", number_of_days,"days as of",format.Date(latest_data_date, "%D")),

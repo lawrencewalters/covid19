@@ -1,13 +1,11 @@
 # Deaths per day histogram ECDC data
-number_of_days <- 180
-regression_days <- 30
-#countries <- c('DE','BER')
-countries <- c('DE','US','CA','MX','IT','ES','UK')
+number_of_days <- 30
+regression_days <- 10
+countries <- c('BER')
+#countries <- c('DE','US','CA','MX','IT','ES','UK')
 #countries <- c('UK')
 Sys.setenv(TZ="Europe/Berlin")
 
-library(readxl)
-library(httr)
 library(reshape2)
 library(ggplot2)
 library(dplyr)
@@ -63,8 +61,6 @@ labels <- mutate(labels,
                                           digits=2, 
                                           nsmall = 1)))
 
-facet_labels <- LabellerForGeoIDs()
-
 ggplot(subset(dflong, 
               (date > latest_data_date - number_of_days) & 
                 (geoId %in% countries)),
@@ -89,7 +85,7 @@ ggplot(subset(dflong,
   facet_wrap(vars(variable, geoId),
              scales = "free_y",
              ncol=length(countries),
-             labeller = facet_labels) +
+             labeller = LabellerForGeoIDs()) +
   scale_fill_brewer(palette = "Dark2") +
   scale_alpha(range = c(0.4, 1)) +
   labs(title = paste("Trends by country in cases and deaths per day over time as of"
