@@ -1,8 +1,8 @@
 # Deaths per day histogram ECDC data
 number_of_days <- 30
 regression_days <- 10
-countries <- c('BER')
-#countries <- c('DE','US','CA','MX','IT','ES','UK')
+#countries <- c('BER')
+countries <- c('DE','US','CA','MX','IT','ES','UK')
 #countries <- c('UK')
 Sys.setenv(TZ="Europe/Berlin")
 

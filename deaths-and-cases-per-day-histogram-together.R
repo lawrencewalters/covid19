@@ -1,4 +1,6 @@
-# Deaths per day histogram ECDC data
+# Deaths and Cases per day histogram ECDC data
+# faceted by country, but deaths and cases on same graph
+# TODO: get second scale on each facet graph for deaths (currently only left scale exists for cases)
 number_of_days <- 28
 regression_days <- 10
 countries <- c('DE','IT', 'ES','FR','UK','AT','DK','BER')
@@ -13,40 +15,18 @@ library(broom)
 library(scales)
 library(ggpmisc)
 
-# get the most recent data.... note that URL includes date
-retrieved_date <- Sys.time()
-latest_data_date <- Sys.Date() + 1
-resp <- list()
-resp[["status_code"]] <- 404
-while(resp[["status_code"]] == 404)
-{
-  latest_data_date <- latest_data_date - 1
-  url <- paste("https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-",format(latest_data_date, "%Y-%m-%d"), ".xlsx", sep = "")
-  resp <- GET(url, authenticate(":", ":", type="ntlm"), write_disk(tf <- tempfile(fileext = ".xlsx")))
-  retrieved_date <- resp[["date"]]
-}
+source("load_data.R")
+source("utilities.R")
 
-#read the Dataset sheet into “R”
-ecdc <- read_excel(tf)
-ecdc <- filter(ecdc, geoId %in% countries)
+ecdc_list <- EcdcData(countries)
+ecdc <- ecdc_list$data
+latest_data_date <- ecdc_list$latest_data_date
+retrieved_date <- ecdc_list$retrieved_date
 
-# get my hand managed data
-df<-read.csv("data\\daily.csv", header = TRUE)
-df <- mutate(df, cases = cases - lag(cases))
-df <- mutate(df, deaths = berlin_deaths - lag(berlin_deaths))
-# get date as actual date object, and weekend calcs
-df <- mutate(df, 
-             dateRep = as.Date(date, '%Y-%m-%d'), 
-             day = as.double(format.Date(dateRep, "%e")),
-             month = as.double(format.Date(dateRep, "%m")),
-             year = as.double(format.Date(dateRep, "%Y")),
-             countriesAndTerritories = 'Berlin',
-             geoId = "BER",
-             countryterritoryCode = "BER",
-             popData2018 = 3769495)
-df <- subset(df, select = c(dateRep, day, month, year, cases, deaths, countriesAndTerritories, geoId, countryterritoryCode, popData2018))
+#berlin <- BerlinData("data\\daily.csv")
+berlin <- BerlinData("https://raw.githubusercontent.com/jakubvalenta/covid-berlin-data/master/covid_berlin_data_incl_hospitalized.csv")
 
-ecdc <- rbind(df, ecdc)
+ecdc <- rbind(berlin, ecdc)
 
 # deaths per day graphs
 ecdc <- mutate(ecdc, 
@@ -55,7 +35,7 @@ ecdc <- mutate(ecdc,
                wkday = ifelse(wday == 0 | wday == 6,0.9,1))
 
 ecdc <- filter(ecdc, date > latest_data_date - number_of_days)
-dflong <- melt(ecdc, id.vars = c("dateRep","day","month","year","countriesAndTerritories","geoId","countryterritoryCode","popData2018","date","wday","wkday"),
+dflong <- melt(ecdc, id.vars = c("dateRep","day","month","year","countriesAndTerritories","geoId","countryterritoryCode","popData2019","date","wday","wkday"),
                measure.vars = c("cases","deaths"))
 
 regressions <- ecdc %>%
