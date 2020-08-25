@@ -7,28 +7,21 @@ library(reshape2)
 library(ggplot2)
 library(dplyr)
 library(broom)
+library(scales)
 library(ggpmisc)
 
-df<-read.csv("data\\daily.csv", header = TRUE)
-df <- mutate(df, berlin_increase = cases - lag(cases))
-df <- mutate(df, germany_increase = germany_cases - lag(germany_cases))
-df <- mutate(df, italy_increase = italy_cases - lag(italy_cases))
+source("load_data.R")
+
+df <- BerlinData("https://raw.githubusercontent.com/jakubvalenta/covid-berlin-data/master/covid_berlin_data_incl_hospitalized.csv")
+
 # get date as actual date object, and weekend calcs
 df <- mutate(df, 
-             date = as.Date(date, '%Y-%m-%d'), 
+             date = as.Date(dateRep, '%Y-%m-%d'), 
              wday = as.POSIXlt(date)$wday, 
              wkday = ifelse(wday == 0 | wday == 6,0.9,1))
 
 dflong <- melt(df, id.vars = c("date","wday","wkday"),
-                   measure.vars = c("berlin_increase"))
-
-variable_names <- list(
-  "berlin_increase" = "Berlin"
-)
-
-variable_labeller <- function(variable,value){
-  return(variable_names[value])
-}
+                   measure.vars = c("cases"))
 
 latest_data_date <- max(dflong$date)
 regressions <- dflong %>%
