@@ -1,6 +1,6 @@
 # compare slopes starting at same deaths for all countries
-min_start_value <- 25
-countries <- c('DE','US', 'IT', 'ES','FR','AT','UK','CA')
+min_start_value <- 1000
+countries <- c('DE','US', 'IT', 'AT','BER')
 
 #install.packages("readxl")
 #install.packages("httr")
@@ -62,8 +62,10 @@ ggplot(subset(ecdc,deathsIndexDate >= 0),
            y=adjDeathsTot,
            fill=geoId,
            color=geoId)) +
-  geom_abline(intercept = log10(min_start_value), slope = 0.1, linetype="dashed", color="gray") +
-  geom_abline(intercept = log10(min_start_value), slope = 0.15, linetype="dashed", color="gray") +
+  # slopes are log(2) / doubling days: these are 4,3,2 days
+  geom_abline(intercept = log10(min_start_value), slope = (log10(2) / 2), linetype="dashed", color="gray", ) +
+  geom_abline(intercept = log10(min_start_value), slope = (log10(2) / 3), linetype="dashed", color="gray") +
+  geom_abline(intercept = log10(min_start_value), slope = (log10(2) / 4), linetype="dashed", color="gray") +
   geom_line(size = 0.1)+
   geom_text(data=labels, 
             aes(label = geoId, 

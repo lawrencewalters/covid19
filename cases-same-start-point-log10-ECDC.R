@@ -1,6 +1,6 @@
 # compare slopes starting at same cases for all countries
-min_start_value <- 100
-countries <- c('DE','US', 'IT', 'ES','FR','UK','KR','AT','CA')
+min_start_value <- 1000
+countries <- c('DE','US', 'IT', 'ES','FR','UK','KR','AT','CA','BER')
 
 #install.packages("readxl")
 #install.packages("httr")
@@ -28,6 +28,25 @@ while(resp[["status_code"]] == 404)
 #read the Dataset sheet into “R”
 ecdc <- read_excel(tf)
 ecdc <- filter(ecdc, geoId %in% countries)
+
+# get my hand managed data
+df<-read.csv("data\\daily.csv", header = TRUE)
+df <- mutate(df, cases = cases - lag(cases, default = 0))
+df <- mutate(df, deaths = berlin_deaths - lag(berlin_deaths, default = 0))
+# get date as actual date object, and weekend calcs
+df <- mutate(df, 
+             dateRep = as.Date(date, '%Y-%m-%d'), 
+             day = as.double(format.Date(dateRep, "%e")),
+             month = as.double(format.Date(dateRep, "%m")),
+             year = as.double(format.Date(dateRep, "%Y")),
+             countriesAndTerritories = 'Berlin',
+             geoId = "BER",
+             countryterritoryCode = "BER",
+             popData2018 = 3769495)
+df <- subset(df, select = c(dateRep, day, month, year, cases, deaths, countriesAndTerritories, geoId, countryterritoryCode, popData2018))
+
+ecdc <- rbind(df, ecdc)
+
 ecdc <- mutate(ecdc, date = as.Date(dateRep, '%Y-%m-%d'))
 
 # calculate the running sum... ecdc data has new cases, cases per day
@@ -62,8 +81,11 @@ ggplot(subset(ecdc,casesIndexDate >= 0),
            fill=geoId,
            color=geoId)) +
   geom_line(size = 0.1)+
-  geom_abline(intercept = log10(min_start_value), slope = 0.1, linetype="dashed", color="gray") +
-  geom_abline(intercept = log10(min_start_value), slope = 0.15, linetype="dashed", color="gray") +
+  # slopes are log(2) / doubling days: these are 4,3,2 days
+  geom_abline(intercept = log10(min_start_value), slope = (log10(2) / 2), linetype="dashed", color="gray", ) +
+  geom_abline(intercept = log10(min_start_value), slope = (log10(2) / 3), linetype="dashed", color="gray", ) +
+  geom_abline(intercept = log10(min_start_value), slope = (log10(2) / 4), linetype="dashed", color="gray") +
+  geom_abline(intercept = log10(min_start_value), slope = (log10(2) / 5), linetype="dashed", color="gray") +
   geom_text(data=labels, 
             aes(label = geoId, 
                 colour = geoId, 

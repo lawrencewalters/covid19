@@ -6,7 +6,7 @@ library(ggplot2)
 library(dplyr)
 
 df<-read.csv("data\\daily.csv", header = TRUE)
-df <- mutate(df, berlin_increase = berlin_cases - lag(berlin_cases))
+df <- mutate(df, berlin_increase = cases - lag(cases))
 df <- mutate(df, germany_increase = germany_cases - lag(germany_cases))
 df <- mutate(df, italy_increase = italy_cases - lag(italy_cases))
 df <- mutate(df, s_korea_increase = s_korea_cases - lag(s_korea_cases))

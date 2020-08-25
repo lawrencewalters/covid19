@@ -1,7 +1,7 @@
-# cases per day histogram ECDC data
-number_of_days <- 40
+# Deaths per day histogram ECDC data
+number_of_days <- 28
 regression_days <- 10
-countries <- c('DE','US', 'IT', 'ES','FR','UK','AT','CA','BER')
+countries <- c('DE','IT', 'ES','FR','UK','AT','DK','BER')
 Sys.setenv(TZ="Europe/Berlin")
 
 library(readxl)
@@ -48,25 +48,25 @@ df <- subset(df, select = c(dateRep, day, month, year, cases, deaths, countriesA
 
 ecdc <- rbind(df, ecdc)
 
-# case increase per day graphs
+# deaths per day graphs
 ecdc <- mutate(ecdc, 
                date = as.Date(dateRep, '%Y-%m-%d',tz='Europe/Berlin'),
                wday = as.POSIXlt(date, tz='Europe/Berlin')$wday,
                wkday = ifelse(wday == 0 | wday == 6,0.9,1))
 
 ecdc <- filter(ecdc, date > latest_data_date - number_of_days)
-
-yrng <- range(ecdc$cases)
+dflong <- melt(ecdc, id.vars = c("dateRep","day","month","year","countriesAndTerritories","geoId","countryterritoryCode","popData2018","date","wday","wkday"),
+               measure.vars = c("cases","deaths"))
 
 regressions <- ecdc %>%
   filter(date > latest_data_date - regression_days) %>%
   group_by(geoId) %>%
-  do(model = lm(cases ~ date, data = .)) %>%
+  do(model = lm(deaths ~ date, data = .)) %>%
   tidy(model)
 
-labels <- ecdc[,c('geoId','countriesAndTerritories','cases')] %>%
+labels <- ecdc[,c('geoId','countriesAndTerritories','deaths')] %>%
   group_by(geoId) %>%
-  top_n(1,cases)
+  top_n(1,deaths)
 
 # get just one row from regressions (date is arbitrary)
 labels <- regressions %>%
@@ -79,12 +79,12 @@ labels <- mutate(labels,
                                           digits=2, 
                                           nsmall = 1)))
 
-ggplot(subset(ecdc, 
+ggplot(subset(dflong, 
               (date > latest_data_date - number_of_days) & 
                 (geoId %in% countries)),
        aes(x = date,
-           y = cases,
-           fill = countriesAndTerritories, 
+           y = value,
+           fill = variable, 
            alpha=wkday
            )) +
   scale_x_date(date_labels = "%m.%d",
@@ -94,17 +94,17 @@ ggplot(subset(ecdc,
   ) +
   theme(axis.text.x = element_text(angle = -90, vjust = 0.3),
         legend.position = "none") +
-  geom_col(colour = "black") +
+  geom_col(colour = "black", position="dodge2") +
   geom_smooth(method='lm',formula=y ~ x,
-              data = subset(ecdc, 
+              data = subset(dflong, 
                             (date > latest_data_date - regression_days))) +
   geom_text_npc(data=labels,aes(npcx = 1, npcy = 1, label = labelText))+
-  scale_y_continuous("New cases per day", label = comma) +
+  scale_y_continuous("Deaths, Cases per day", label = comma) +
   facet_wrap(~ countriesAndTerritories,
              scales = "free_y") +
   scale_fill_brewer(palette = "Dark2") +
   scale_alpha(range = c(0.4, 1)) +
-  ggtitle(paste("New cases per day for last", number_of_days,"days as of",format.Date(latest_data_date, "%D")),
+  ggtitle(paste("Cases and Deaths per day over time as of",format.Date(latest_data_date, "%D")),
           subtitle = paste("p value from linear regression on most recent",regression_days,"days. ECDC data",
                            latest_data_date,
                            "retrieved",

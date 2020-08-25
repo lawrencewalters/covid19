@@ -10,7 +10,7 @@ library(broom)
 library(ggpmisc)
 
 df<-read.csv("data\\daily.csv", header = TRUE)
-df <- mutate(df, berlin_increase = berlin_cases - lag(berlin_cases))
+df <- mutate(df, berlin_increase = cases - lag(cases))
 df <- mutate(df, germany_increase = germany_cases - lag(germany_cases))
 df <- mutate(df, italy_increase = italy_cases - lag(italy_cases))
 # get date as actual date object, and weekend calcs
