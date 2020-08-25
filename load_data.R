@@ -24,6 +24,7 @@ EcdcData <- function(countries) {
 
 # get berlin data from URL or local file CSV
 BerlinData <- function(filename) {
+  library(dplyr)
   df<-read.csv(filename, header = TRUE)
   # calculate numbers per day - file has cumulative numbers per day
   df <- mutate(df, cases = cases - lag(cases))
