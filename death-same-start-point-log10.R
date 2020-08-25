@@ -1,75 +1,85 @@
 # compare slopes starting at same deaths for all countries
-min_start_value <- 5
-# Loading
+min_start_value <- 1000
+countries <- c('DE','US', 'IT', 'AT','BER')
+
+#install.packages("readxl")
+#install.packages("httr")
+
+library(readxl)
+library(httr)
 library(reshape2)
 library(ggplot2)
 library(dplyr)
+library(scales)
 
-df<-read.csv("data\\daily.csv", header = TRUE)
-df <- mutate(df, date = as.Date(date, '%Y-%m-%d'))
+source("load_data.R")
+source("utilities.R")
+
+ecdc_list <- EcdcData(countries)
+ecdc <- ecdc_list$data
+latest_data_date <- ecdc_list$latest_data_date
+retrieved_date <- ecdc_list$retrieved_date
+
+#berlin <- BerlinData("data\\daily.csv")
+berlin <- BerlinData("https://raw.githubusercontent.com/jakubvalenta/covid-berlin-data/master/covid_berlin_data_incl_hospitalized.csv")
+
+ecdc <- rbind(berlin, ecdc)
+ecdc <- mutate(ecdc, date = as.Date(dateRep, '%Y-%m-%d'))
+
+# calculate the running sum... ecdc data has new cases, deaths per day
+ecdc <- ecdc %>%
+  group_by(geoId) %>%
+  arrange(date) %>%
+  mutate(deathsTot = cumsum(deaths))
 
 # find the day that had > min_start_value deaths per country
-df[df$berlin_deaths > min_start_value, 1][1]
-df <- mutate(df, berlin_index = as.integer(date - df[df$berlin_deaths > min_start_value, 1][1]))
-df[df$germany_deaths > min_start_value, 1][1]
-df <- mutate(df, germany_index = as.integer(date - df[df$germany_deaths > min_start_value, 1][1]))
-df[df$italy_deaths > min_start_value, 1][1]
-df <- mutate(df, italy_index = as.integer(date - df[df$italy_deaths > min_start_value, 1][1]))
+starts <- filter(ecdc, deathsTot > min_start_value) %>%
+  group_by(geoId) %>%
+  summarise(startDate = min(date),deathsAdj = min(deathsTot) - min_start_value)
 
-# get these from a wide format to a long format
-dflong <- data.frame(day=integer(),
-                     variable=character(),
-                     value=integer(),
-                     stringsAsFactors=FALSE)
+# get that into an "index" field that can be used for graphing
+ecdc <- filter(ecdc, geoId %in% starts$geoId) %>%
+  inner_join(starts,by = c('geoId','geoId')) %>%
+  group_by(geoId) %>%
+  mutate(deathsIndexDate = as.integer(date - startDate), 
+         adjDeathsTot = deathsTot - deathsAdj)
 
-tmplong <- melt(subset(df,berlin_index >= 0), 
-               id.vars = "berlin_index",
-               measure.vars = c("berlin_deaths"))
-names(tmplong)[1] <- "day"
-dflong <- rbind(dflong,tmplong)
+y_ends <- ecdc %>% 
+  group_by(geoId) %>% 
+  top_n(1, deathsTot) %>% 
+  pull(deathsTot)
 
-tmplong <- melt(subset(df,germany_index >= 0), 
-               id.vars = "germany_index",
-               measure.vars = c("germany_deaths"))
+labels <- ecdc %>%
+  group_by(geoId) %>%
+  top_n(1, deathsIndexDate)
 
-names(tmplong)[1] <- "day"
-dflong <- rbind(dflong,tmplong)
-
-tmplong <- melt(subset(df,italy_index >= 0), 
-                id.vars = "italy_index",
-                measure.vars = c("italy_deaths"))
-
-names(tmplong)[1] <- "day"
-dflong <- rbind(dflong,tmplong)
-
-
-variable_names <- list(
-  "berlin_increase" = "Berlin" ,
-  "germany_increase" = "Germany",
-  "italy_increase" = "Italy"
-)
-
-variable_labeller <- function(variable,value){
-  return(variable_names[value])
-}
-
-y_ends <- dflong %>% 
-  group_by(variable) %>% 
-  top_n(1, value) %>% 
-  pull(value)
-
-ggplot(dflong, 
-       aes(x=day,
-           y=value,
-           fill=variable,
-           color=variable)) +
-  #theme(axis.text.x = element_text(angle = -90, hjust = 1))+
+ggplot(subset(ecdc,deathsIndexDate >= 0), 
+       aes(x=deathsIndexDate,
+           y=adjDeathsTot,
+           fill=geoId,
+           color=geoId)) +
+  # slopes are log(2) / doubling days: these are 4,3,2 days
+  geom_abline(intercept = log10(min_start_value), slope = (log10(2) / 2), linetype="dashed", color="gray", ) +
+  geom_abline(intercept = log10(min_start_value), slope = (log10(2) / 3), linetype="dashed", color="gray") +
+  geom_abline(intercept = log10(min_start_value), slope = (log10(2) / 4), linetype="dashed", color="gray") +
   geom_line(size = 0.1)+
+  geom_text(data=labels, 
+            aes(label = geoId, 
+                colour = geoId, 
+                x = deathsIndexDate, 
+                y = deathsTot), 
+            hjust = -0.5, 
+            vjust = 0.5) +
   ggtitle("Total deaths over time",
-          subtitle = paste("Synchronized with day '0' as when the country had",min_start_value, "deaths")) +
-  scale_y_continuous("Total deaths (log scale)", 
+          subtitle = paste("Starting at",min_start_value, "deaths. ECDC data ",latest_data_date,"retrieved",retrieved_date)) +
+  theme(legend.position = 'none') +
+  scale_y_continuous("Total deaths", 
                      trans="log10",
-                     sec.axis = sec_axis(~ ., breaks = y_ends))
-  expand_limits(x=0, y=50)
-  #geom_smooth(method='lm',se=FALSE)
+                     sec.axis = sec_axis(~ ., 
+                                         breaks = y_ends,
+                                         label = comma),
+                     expand = expansion(mult = c(0, .1)),
+                     label = comma) +
+  scale_x_continuous(paste("Days since",min_start_value,"deaths"),
+                     expand = expansion(mult = c(0, .1)))
 
