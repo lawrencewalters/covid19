@@ -1,32 +1,20 @@
 # cases per day histogram ECDC data
-number_of_days <- 21
+number_of_days <- 45
 countries <- c('DE','US', 'IT', 'ES','FR')
+Sys.setenv(TZ="Europe/Berlin")
 
-#install.packages("readxl")
-#install.packages("httr")
-
-library(readxl)
 library(httr)
 library(reshape2)
 library(ggplot2)
 library(dplyr)
 
-# get the most recent data.... note that URL includes date
-retrieved_date <- Sys.time()
-latest_data_date <- Sys.Date() + 1
-resp <- list()
-resp[["status_code"]] <- 404
-while(resp[["status_code"]] == 404)
-{
-  latest_data_date <- latest_data_date - 1
-  url <- paste("https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-",format(latest_data_date, "%Y-%m-%d"), ".xlsx", sep = "")
-  resp <- GET(url, authenticate(":", ":", type="ntlm"), write_disk(tf <- tempfile(fileext = ".xlsx")))
-  retrieved_date <- resp[["date"]]
-}
+source("load_data.R")
+source("utilities.R")
 
-#read the Dataset sheet into “R”
-ecdc <- read_excel(tf)
-ecdc <- filter(ecdc, geoId %in% countries)
+ecdc_list <- EcdcData(countries)
+ecdc <- ecdc_list$data
+latest_data_date <- ecdc_list$latest_data_date
+retrieved_date <- ecdc_list$retrieved_date
 
 # case increase per day graphs
 ecdc <- mutate(ecdc, date = as.Date(dateRep, '%Y-%m-%d'),
@@ -35,7 +23,7 @@ ecdc <- mutate(ecdc, date = as.Date(dateRep, '%Y-%m-%d'),
 
 yrng <- range(ecdc$cases)
 
-ggplot(subset(ecdc, (date > Sys.Date() - number_of_days) & (geoId %in% c('DE','IT','FR','ES','US'))),
+ggplot(subset(ecdc, (date > Sys.Date() - number_of_days) & (geoId %in% countries)),
        aes(x = date,
            y = cases,
            fill = countriesAndTerritories, 
