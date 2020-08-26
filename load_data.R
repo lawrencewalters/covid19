@@ -1,6 +1,6 @@
 # load data from external sources
 
-# get ECDC data from their website for specified countries
+# get ECDC data from their website for specified geoId's (countries)
 EcdcData <- function(countries) {
   library(readxl)
   library(httr)
@@ -37,10 +37,38 @@ BerlinData <- function(filename) {
                month = as.double(format.Date(dateRep, "%m")),
                year = as.double(format.Date(dateRep, "%Y")),
                countriesAndTerritories = 'Berlin',
-               geoId = "BER",
-               countryterritoryCode = "BER",
+               geoId = "DE-BER",
+               countryterritoryCode = "DE",
                popData2019 = 3769495,
                continentExp = 'Europe',
+               "Cumulative_number_for_14_days_of_COVID-19_cases_per_100000" = 1.0
+               )
+  return(subset(df, select = c(dateRep, day, month, year, cases, deaths, countriesAndTerritories, geoId, countryterritoryCode, popData2019,continentExp,get("Cumulative_number_for_14_days_of_COVID-19_cases_per_100000"))))
+}
+
+# get data from CSV and make it match ECDC format
+# also filter for desired "geoId" from data set
+# defaults to Berlin parameters
+CSVData <- function(filename, cumulativeCounts = TRUE, countriesAndTerritories = "Berlin", geoId = "DE-BER", countryterritoryCode = "BER", popData2019 = 3769495, continentExp = "Europe" ) {
+  library(dplyr)
+  df<-read.csv(filename, header = TRUE)
+  # calculate numbers per day - file has cumulative numbers per day
+  if(cumulativeCounts) {
+    df <- mutate(df, cases = cases - lag(cases))
+    df <- mutate(df, deaths = deaths - lag(deaths))
+  }
+  
+  # get date as actual date object, and weekend calcs - these fields match ECDC fields
+  df <- mutate(df, 
+               dateRep = as.Date(date, '%Y-%m-%d'), 
+               day = as.double(format.Date(dateRep, "%e")),
+               month = as.double(format.Date(dateRep, "%m")),
+               year = as.double(format.Date(dateRep, "%Y")),
+               countriesAndTerritories = countriesAndTerritories,
+               geoId = geoId,
+               countryterritoryCode = countryterritoryCode,
+               popData2019 = popData2019,
+               continentExp = continentExp,
                "Cumulative_number_for_14_days_of_COVID-19_cases_per_100000" = 1.0
                )
   return(subset(df, select = c(dateRep, day, month, year, cases, deaths, countriesAndTerritories, geoId, countryterritoryCode, popData2019,continentExp,get("Cumulative_number_for_14_days_of_COVID-19_cases_per_100000"))))
