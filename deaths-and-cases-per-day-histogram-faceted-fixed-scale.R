@@ -4,8 +4,10 @@ regression_days <- 10
 #countries <- c('DE-BER','DE')
 #countries <- c('DE','IT','UK','SE')
 countries <- c('US','CA','MX')
+#countries <- c('NORAM')
 #countries <- c('DE-BER', 'DE','US','CA','MX','IT','ES','UK')
 #countries <- c('ES')
+
 Sys.setenv(TZ="Europe/Berlin")
 
 library(reshape2)
@@ -61,6 +63,8 @@ labels <- mutate(labels,
                                           digits=2, 
                                           nsmall = 1)))
 
+fixed_scales <- data.frame(variable=c("cases","cases","deaths","deaths"), x = c(latest_data_date - number_of_days, latest_data_date), y = c(0,max(subset(dflong, variable == "cases")$value),0,max(subset(dflong, variable == "deaths")$value)))
+
 ggplot(dflong,
        aes(x = date,
            y = value,
@@ -90,6 +94,8 @@ ggplot(dflong,
              labeller = LabellerForGeoIDs()) +
   # zero bound y scale (regressions sometimes go negative), use commas in y scale labels
   scale_y_continuous(NULL, label=comma, limits = c(0,NA)) + 
+  # fixed y-axis per facet (cases, deaths)
+  geom_blank(data = fixed_scales, aes(x = x, y = y, alpha=1)) +
   scale_fill_brewer(palette = "Dark2") +
   # weekdays shaded lighter
   scale_alpha(range = c(0.4, 1)) +
